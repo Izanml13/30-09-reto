@@ -1,0 +1,147 @@
+{
+  "metrica": "WER (Word Error Rate) = (S + B + I) / palabras_referencia",
+  "nota_metrica": "El texto se normaliza (minusculas, sin acentos ni puntuacion) antes de comparar, de modo que diferencias tipograficas no cuentan como error. El WER no tiene cota superior.",
+  "audios": [
+    {
+      "audio_id": "audio1_frase_corta",
+      "archivo": "audio1_frase_corta.wav",
+      "voz": "Mónica (es_ES)",
+      "nivel": "facil",
+      "duracion_s": null,
+      "referencia": "Hola, hoy voy a probar el sistema de transcripción de voz.",
+      "webspeech": {
+        "hipotesis": null,
+        "evaluable": false,
+        "resultado": {
+          "wer": NaN,
+          "wer_porcentaje": NaN,
+          "sustituciones": 0,
+          "borrados": 0,
+          "insertados": 0,
+          "palabras_referencia": 11,
+          "palabras_hipotesis": 0,
+          "palabras_correctas": 0,
+          "coincidencia_exacta": false,
+          "evaluable": false,
+          "motivo_no_evaluable": "no capturado"
+        }
+      },
+      "endpoint": {
+        "hipotesis": "[MOCK] Transcripcion simulada del servicio de prueba. Configure GEMINI_API_KEY para transcribir el audio real.",
+        "provider": "mock",
+        "evaluable": false,
+        "http_status": 200,
+        "servicio_ms": 1664,
+        "resultado": {
+          "wer": NaN,
+          "wer_porcentaje": NaN,
+          "sustituciones": 0,
+          "borrados": 0,
+          "insertados": 0,
+          "palabras_referencia": 11,
+          "palabras_hipotesis": 14,
+          "palabras_correctas": 0,
+          "coincidencia_exacta": false,
+          "evaluable": false,
+          "motivo_no_evaluable": "Gemini no pudo transcribir y se activo el proveedor simulado. Motivo: Gemini rechazo la credencial (ClientError): 403 PERMISSION_DENIED. {'error': {'code': 403, 'message': 'Your project has been denied access. Please contact support.', 'status': 'PERMISSION_DENIED'}}. Revisa que GEMINI_API_KEY sea valida y que el modelo este habilitado en el proyecto de Google Cloud."
+        }
+      }
+    },
+    {
+      "audio_id": "audio2_numeros_hora",
+      "archivo": "audio2_numeros_hora.wav",
+      "voz": "Paulina (es_MX)",
+      "nivel": "dificil",
+      "duracion_s": null,
+      "referencia": "El pedido número cuarenta y cinco llegó a las tres y media de la tarde.",
+      "webspeech": {
+        "hipotesis": null,
+        "evaluable": false,
+        "resultado": {
+          "wer": NaN,
+          "wer_porcentaje": NaN,
+          "sustituciones": 0,
+          "borrados": 0,
+          "insertados": 0,
+          "palabras_referencia": 15,
+          "palabras_hipotesis": 0,
+          "palabras_correctas": 0,
+          "coincidencia_exacta": false,
+          "evaluable": false,
+          "motivo_no_evaluable": "no capturado"
+        }
+      },
+      "endpoint": {
+        "hipotesis": "[MOCK] Transcripcion simulada del servicio de prueba. Configure GEMINI_API_KEY para transcribir el audio real.",
+        "provider": "mock",
+        "evaluable": false,
+        "http_status": 200,
+        "servicio_ms": 2327,
+        "resultado": {
+          "wer": NaN,
+          "wer_porcentaje": NaN,
+          "sustituciones": 0,
+          "borrados": 0,
+          "insertados": 0,
+          "palabras_referencia": 15,
+          "palabras_hipotesis": 14,
+          "palabras_correctas": 0,
+          "coincidencia_exacta": false,
+          "evaluable": false,
+          "motivo_no_evaluable": "Gemini no pudo transcribir y se activo el proveedor simulado. Motivo: Gemini rechazo la credencial (ClientError): 403 PERMISSION_DENIED. {'error': {'code': 403, 'message': 'Your project has been denied access. Please contact support.', 'status': 'PERMISSION_DENIED'}}. Revisa que GEMINI_API_KEY sea valida y que el modelo este habilitado en el proyecto de Google Cloud."
+        }
+      }
+    },
+    {
+      "audio_id": "audio3_frase_larga",
+      "archivo": "audio3_frase_larga.wav",
+      "voz": "Eddy (es_ES)",
+      "nivel": "dificil",
+      "duracion_s": null,
+      "referencia": "La reunión del comité; ciento veinte personas; se pospone porque el presupuesto anual necesita una revisión completa antes de aprobarlo.",
+      "webspeech": {
+        "hipotesis": null,
+        "evaluable": false,
+        "resultado": {
+          "wer": NaN,
+          "wer_porcentaje": NaN,
+          "sustituciones": 0,
+          "borrados": 0,
+          "insertados": 0,
+          "palabras_referencia": 20,
+          "palabras_hipotesis": 0,
+          "palabras_correctas": 0,
+          "coincidencia_exacta": false,
+          "evaluable": false,
+          "motivo_no_evaluable": "no capturado"
+        }
+      },
+      "endpoint": {
+        "hipotesis": "[MOCK] Transcripcion simulada del servicio de prueba. Configure GEMINI_API_KEY para transcribir el audio real.",
+        "provider": "mock",
+        "evaluable": false,
+        "http_status": 200,
+        "servicio_ms": 2779,
+        "resultado": {
+          "wer": NaN,
+          "wer_porcentaje": NaN,
+          "sustituciones": 0,
+          "borrados": 0,
+          "insertados": 0,
+          "palabras_referencia": 20,
+          "palabras_hipotesis": 14,
+          "palabras_correctas": 0,
+          "coincidencia_exacta": false,
+          "evaluable": false,
+          "motivo_no_evaluable": "Gemini no pudo transcribir y se activo el proveedor simulado. Motivo: Gemini rechazo la credencial (ClientError): 403 PERMISSION_DENIED. {'error': {'code': 403, 'message': 'Your project has been denied access. Please contact support.', 'status': 'PERMISSION_DENIED'}}. Revisa que GEMINI_API_KEY sea valida y que el modelo este habilitado en el proyecto de Google Cloud."
+        }
+      }
+    }
+  ],
+  "resumen": {
+    "webspeech_wer_medio": null,
+    "endpoint_wer_medio": null,
+    "audios_con_webspeech": 0,
+    "audios_con_endpoint": 0
+  }
+}

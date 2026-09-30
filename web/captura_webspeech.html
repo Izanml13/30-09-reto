@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Captura automatica · Web Speech API</title>
+<style>
+  body { font: 15px/1.6 -apple-system, "Segoe UI", Roboto, sans-serif;
+         max-width: 720px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; }
+  h1 { font-size: 21px; margin: 0 0 4px; }
+  p.sub { color: #666; margin: 0 0 22px; font-size: 13.5px; }
+  fieldset { border: 1px solid #ddd; border-radius: 10px; padding: 16px 18px; margin: 0 0 18px; }
+  legend { font-weight: 600; font-size: 13px; text-transform: uppercase;
+           letter-spacing: .5px; color: #666; padding: 0 6px; }
+  label { display: block; margin: 10px 0; font-size: 14px; }
+  input, select, textarea { font: inherit; padding: 8px 10px; border: 1px solid #ccc;
+                            border-radius: 7px; width: 100%; box-sizing: border-box; }
+  button { font: inherit; font-weight: 600; padding: 10px 20px; border-radius: 8px;
+           border: 0; background: #2563eb; color: #fff; cursor: pointer; }
+  button.sec { background: #6b7280; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .salida { background: #f7f7f8; border: 1px solid #e3e3e6; border-radius: 8px;
+            padding: 14px; min-height: 70px; white-space: pre-wrap; font-size: 14.5px; }
+  .estado { padding: 10px 14px; border-radius: 8px; margin: 14px 0; font-size: 13.5px; }
+  .ok   { background: #dcfce7; border: 1px solid #86efac; color: #14532d; }
+  .err  { background: #fee2e2; border: 1px solid #fca5a5; color: #7f1d1d; }
+  .wait { background: #fef9c3; border: 1px solid #fde047; color: #713f12; }
+  code { background: #eee; padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
+  .auto { background: #eef2ff; border-left: 3px solid #6366f1; padding: 12px 14px;
+          border-radius: 6px; font-size: 13px; margin-bottom: 18px; }
+</style>
+</head>
+<body>
+
+<h1>Captura automatica de la Web Speech API</h1>
+<p class="sub">Graba un microfono real (o el audio inyectado por Chrome) y
+   guarda la transcripcion para que <code>scripts/evaluate.py</code> mida su WER.</p>
+
+<div class="auto" id="aviso-auto" hidden></div>
+
+<fieldset>
+  <legend>Fuente de audio</legend>
+  <label><input type="checkbox" id="auto" style="width:auto"> Modo automatico
+    (enviar la transcripcion al servidor y terminar)</label>
+  <label>Identificador del audio
+    <input type="text" id="audio-id" placeholder="audio1_frase_corta"></label>
+  <label>Idioma
+    <select id="idioma">
+      <option value="es-ES" selected>es-ES</option>
+      <option value="es-MX">es-MX</option>
+      <option value="en-US">en-US</option>
+    </select></label>
+</fieldset>
+
+<fieldset>
+  <legend>Reconocimiento</legend>
+  <label><input type="checkbox" id="continuo" style="width:auto" checked> Continuo</label>
+  <div>
+    <button id="btn-empezar">● Empezar a escuchar</button>
+    <button id="btn-parar" class="sec" disabled>■ Detener</button>
+  </div>
+</fieldset>
+
+<fieldset>
+  <legend>Transcripcion</legend>
+  <div class="salida" id="salida"><em>(vacio)</em></div>
+  <div class="estado wait" id="estado">Sin iniciar.</div>
+</fieldset>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+let rec = null, finalTexto = '', provisional = '';
+let modoAuto = false;
+
+const aviso = $('#aviso-auto');
+
+function mostrar(mensaje, tipo = 'wait') {
+  const e = $('#estado');
+  e.textContent = mensaje;
+  e.className = 'estado ' + tipo;
+}
+
+function pintar() {
+  $('#salida').textContent =
+    (finalTexto + ' ' + provisional).trim() || '(vacio)';
+}
+
+async function guardar() {
+  const texto = (finalTexto + ' ' + provisional).trim();
+  if (!texto) { mostrar('No se capturo texto: no se envia nada.', 'err'); return; }
+  try {
+    const r = await fetch('/api/report/webspeech', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        audio_id: $('#audio-id').value.trim(),
+        hipotesis: texto,
+        idioma: $('#idioma').value,
+        navegador: navigator.userAgent.slice(0, 120),
+        origen: modoAuto ? 'automatico' : 'manual',
+      }),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    mostrar('Guardado en el servidor: "' + texto + '"', 'ok');
+  } catch (e) {
+    mostrar('No se pudo guardar: ' + e.message, 'err');
+  }
+}
+
+function terminar() {
+  if (modoAuto) {
+    // Margen para que Chrome vacie los ultimos resultados provisionales.
+    setTimeout(guardar, 1200);
+  }
+}
+
+function iniciar() {
+  if (!SpeechRec) {
+    mostrar('Este navegador NO soporta la Web Speech API.', 'err');
+    return;
+  }
+  finalTexto = ''; provisional = '';
+  rec = new SpeechRec();
+  rec.lang = $('#idioma').value;
+  rec.continuous = $('#continuo').checked;
+  rec.interimResults = true;
+
+  rec.onstart = () => {
+    $('#btn-empezar').disabled = true;
+    $('#btn-parar').disabled = false;
+    mostrar('Escuchando...');
+  };
+
+  rec.onresult = ev => {
+    let f = '', p = '';
+    for (let i = 0; i < ev.results.length; i++) {
+      const t = ev.results[i][0].transcript;
+      if (ev.results[i].isFinal) f += t + ' ';
+      else p += t;
+    }
+    finalTexto = f.trim();
+    provisional = p.trim();
+    pintar();
+  };
+
+  rec.onerror = ev => {
+    const m = {
+      'not-allowed': 'Permiso de microfono denegado.',
+      'no-speech': 'No se detecto voz en el audio inyectado.',
+      'audio-capture': 'No hay microfono disponible.',
+      'network': 'Fallo de red del servicio de reconocimiento.',
+      'service-not-allowed': 'Servicio bloqueado (posible modo privado).',
+    };
+    mostrar(m[ev.error] || ('Error: ' + ev.error), 'err');
+  };
+
+  rec.onend = () => {
+    $('#btn-empezar').disabled = false;
+    $('#btn-parar').disabled = true;
+    pintar();
+    if (modoAuto) terminar();
+  };
+
+  try { rec.start(); }
+  catch (e) { mostrar('No se pudo iniciar: ' + e.message, 'err'); }
+}
+
+$('#btn-empezar').addEventListener('click', iniciar);
+$('#btn-parar').addEventListener('click', () => rec && rec.stop());
+
+// --- Parametros de URL: ?id=audio1&auto=1 ---------------------------
+const q = new URLSearchParams(location.search);
+if (q.get('id')) $('#audio-id').value = q.get('id');
+if (q.get('lang')) $('#idioma').value = q.get('lang');
+if (q.get('auto') === '1') {
+  modoAuto = true;
+  $('#auto').checked = true;
+  aviso.hidden = false;
+  aviso.innerHTML =
+    'Modo automatico activo. Esta pagina iniciara el reconocimiento al cargar, ' +
+    'guardara el texto en <code>/api/report/webspeech</code> y podra cerrarse.';
+  document.title = 'capturando ' + ($('#audio-id').value || '?') + '...';
+  addEventListener('load', () => setTimeout(iniciar, 300));
+} else {
+  mostrar('Pulsa «Empezar a escuchar» y habla al microfono.');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "nota": "Verdad terreno generada por scripts/generate_audios.sh. El texto es exacto porque 'say' sintetiza un texto que ya conocemos.",
+  "idioma": "es-ES",
+  "audios": [
+    {
+      "id": "audio1_frase_corta",
+      "archivo": "audio1_frase_corta.wav",
+      "voz": "Mónica (es_ES)",
+      "ritmo_wpm": 165,
+      "nivel": "facil",
+      "referencia": "Hola, hoy voy a probar el sistema de transcripción de voz."
+    },
+    {
+      "id": "audio2_numeros_hora",
+      "archivo": "audio2_numeros_hora.wav",
+      "voz": "Paulina (es_MX)",
+      "ritmo_wpm": 175,
+      "nivel": "dificil",
+      "referencia": "El pedido número cuarenta y cinco llegó a las tres y media de la tarde."
+    },
+    {
+      "id": "audio3_frase_larga",
+      "archivo": "audio3_frase_larga.wav",
+      "voz": "Eddy (es_ES)",
+      "ritmo_wpm": 150,
+      "nivel": "dificil",
+      "referencia": "La reunión del comité; ciento veinte personas; se pospone porque el presupuesto anual necesita una revisión completa antes de aprobarlo."
+    }
+  ]
+}

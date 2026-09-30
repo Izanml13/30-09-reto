@@ -1,0 +1,47 @@
+{
+  "registros": [
+    {
+      "navegador": "Chromium",
+      "detalle": "Chromium 154.0.0.0",
+      "microfono": {
+        "ok": true,
+        "detalle": "track: Micrófono del MacBook Air (Built-in), muted: false"
+      },
+      "motor_voz": {
+        "ok": {
+          "ok": null,
+          "texto": "",
+          "detalle": "arranco pero no devolvio texto en 3s"
+        }
+      },
+      "transcripcion": {
+        "ok": true,
+        "texto": "yo paso a buscar",
+        "detalle": "confianza: 95.1%"
+      },
+      "util_para_opcion_a": true,
+      "ts": "2026-09-30T08:04:46.918464+00:00"
+    },
+    {
+      "navegador": "Safari",
+      "detalle": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Safari/605.1.15",
+      "microfono": {
+        "ok": true,
+        "detalle": "track: Micrófono del MacBook Air, muted: false"
+      },
+      "motor_voz": {
+        "ok": {
+          "ok": null,
+          "texto": "",
+          "detalle": "arranco pero no devolvio texto en 3s"
+        }
+      },
+      "transcripcion": {
+        "ok": false,
+        "detalle": "error \"aborted\""
+      },
+      "util_para_opcion_a": false,
+      "ts": "2026-09-30T08:00:08.657406+00:00"
+    }
+  ]
+}

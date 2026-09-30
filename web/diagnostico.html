@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diagnóstico · Web Speech API</title>
+<style>
+  :root { --ok:#34d399; --err:#f87171; --warn:#fbbf24; --bg:#0f1420; --card:#1c2434; --line:#2c3852; --txt:#e8edf6; --dim:#94a3b8; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.6 -apple-system,"Segoe UI",Roboto,sans-serif;
+         background:linear-gradient(180deg,var(--bg),#161d2c); color:var(--txt); min-height:100vh; }
+  header { padding:26px 20px 18px; text-align:center; border-bottom:1px solid var(--line); }
+  h1 { margin:0 0 6px; font-size:23px; }
+  .sub { color:var(--dim); font-size:13.5px; margin:0; }
+  main { max-width:760px; margin:0 auto; padding:22px 18px 46px; }
+
+  .cta { background:var(--card); border:1px solid var(--line); border-radius:12px;
+         padding:20px; text-align:center; }
+  button { font:inherit; font-weight:600; font-size:15px; padding:12px 26px;
+           border:0; border-radius:10px; background:#22d3ee; color:#06252b; cursor:pointer; }
+  button:hover { filter:brightness(1.1); }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+
+  table { width:100%; border-collapse:collapse; margin-top:20px; font-size:14px;
+          background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  th,td { text-align:left; padding:12px 14px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { background:#222c3f; font-size:11.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--dim); }
+  tr:last-child td { border-bottom:0; }
+  .ok   { color:var(--ok);   font-weight:700; }
+  .bad  { color:var(--err);  font-weight:700; }
+  .warn { color:var(--warn); font-weight:700; }
+  .detalle { color:var(--dim); font-size:12.5px; display:block; margin-top:4px;
+             font-family:ui-monospace,Menlo,monospace; word-break:break-word; }
+
+  #veredicto { margin-top:20px; padding:16px 18px; border-radius:11px;
+               border:1px solid var(--line); background:#1a2132; display:none; }
+  #veredicto h2 { margin:0 0 8px; font-size:16px; }
+  #veredicto ul { margin:8px 0 0; padding-left:20px; }
+  #veredicto li { margin:5px 0; }
+  code { background:#222c3f; padding:1px 6px; border-radius:5px; font-size:13px; }
+
+  .pie { margin-top:14px; font-size:12.5px; color:var(--dim); text-align:center; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Diagnóstico de compatibilidad</h1>
+  <p class="sub">Comprueba si este navegador sirve para la Opción A (Web Speech API)</p>
+</header>
+
+<main>
+  <div class="cta">
+    <p style="margin-top:0"><strong>Pulsa el botón y permite el micrófono</strong> cuando el navegador lo pida.</p>
+    <button id="btn">▶ Ejecutar diagnóstico</button>
+    <p class="sub" id="estado" style="margin-bottom:0">Sin ejecutar</p>
+  </div>
+
+  <table>
+    <thead><tr><th>Prueba</th><th>Resultado</th></tr></thead>
+    <tbody>
+      <tr><td>Navegador</td><td id="t-nav">—</td></tr>
+      <tr><td>Contexto seguro (localhost/https)</td><td id="t-secure">—</td></tr>
+      <tr><td>API <code>SpeechRecognition</code> presente</td><td id="t-api">—</td></tr>
+      <tr><td>Permiso de micrófono (<code>getUserMedia</code>)</td><td id="t-gum">—</td></tr>
+      <tr><td>Motor de reconocimiento de voz</td><td id="t-speech">—</td></tr>
+      <tr><td>Prueba final: transcripción real</td><td id="t-final">—</td></tr>
+    </tbody>
+  </table>
+
+  <div id="veredicto"></div>
+
+  <p class="pie">Este informe se envía a <code>/api/diag</code> para que el resto
+  del equipo pueda consultarlo sin repetir la prueba.</p>
+</main>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+
+const RESULTADOS = {
+  nav: '', secure: null, api: null,
+  gum: {ok:false, detalle:''},
+  speech: {ok:false, detalle:''},
+  final: {ok:false, texto:'', detalle:''},
+};
+
+function fila(id, ok, texto, detalle) {
+  const el = $(id);
+  el.innerHTML =
+    `<span class="${ok === true ? 'ok' : ok === false ? 'bad' : 'warn'}">` +
+    `${ok === true ? '✔ ' : ok === false ? '✘ ' : '… '}${escapar(texto)}</span>` +
+    (detalle ? `<span class="detalle">${escapar(detalle)}</span>` : '');
+}
+
+function escapar(t) {
+  const d = document.createElement('div');
+  d.textContent = String(t ?? '');
+  return d.innerHTML;
+}
+
+function agente() {
+  const ua = navigator.userAgent;
+  const extra = (pat, nombre) => (ua.match(pat) ? nombre : '');
+  return [
+    extra(/Edg\//, 'Edge'), extra(/Brave/i, 'Brave'),
+    extra(/OPR\//, 'Opera'), extra(/Chrome\//, 'Chromium'),
+    extra(/Version\/[\d.]+ Safari/, 'Safari'), extra(/Firefox\//, 'Firefox'),
+    extra(/OpenCode|Electron/i, 'OpenCode (incrustado)'),
+    extra(/Edg\//, ''), extra(/Chrome\//, ''),
+  ].filter(Boolean).join(' ') || 'desconocido';
+}
+
+function copia() {
+  const m = ua => (ua.match(/[\d.]+/) || ['?'])[0];
+  let det = navigator.userAgent;
+  const chrome = det.match(/Chrome\/([\d.]+)/);
+  const e = det.match(/Electron\/([\d.]+)/);
+  if (chrome) det = `Chromium ${m(chrome[1])}`;
+  if (e) det += ` · Electron ${m(e[1])}`;
+  return det;
+}
+
+async function probarMic() {
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({audio:true});
+    const t = s.getAudioTracks()[0];
+    s.getTracks().forEach(x=>x.stop());
+    return {ok:true, detalle:`track: ${t ? t.label || '(sin etiqueta)' : 'ninguno'}, muted: ${t ? t.muted : 'n/a'}`};
+  } catch(e) {
+    return {ok:false, detalle:`${e.name}: ${e.message}`};
+  }
+}
+
+function probarSpeech(segundos) {
+  return new Promise(res => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return res({ok:false, detalle:'la API no existe en este navegador'});
+
+    const r = new SR();
+    r.lang = 'es-ES';
+    r.continuous = false;
+    r.interimResults = false;
+    let arrancado = false;
+
+    r.onstart = () => { arrancado = true; };
+    r.onresult = e => res({ok:true, texto:e.results[0][0].transcript,
+                           detalle:`confianza: ${(e.results[0][0].confidence*100).toFixed(1)}%`});
+    r.onerror = e => res({ok:false, detalle:`error "${e.error}"`});
+    r.onend = () => {
+      if (!arrancado) res({ok:false, detalle:'no llego onstart'});
+    };
+
+    try { r.start(); } catch(e) { return res({ok:false, detalle:'throw: '+e.message}); }
+    setTimeout(() => res({ok: arrancado
+        ? {ok:null, texto:'', detalle:'arranco pero no devolvio texto en '+segundos+'s'}
+        : {ok:false, detalle:'sin onstart ni onerror (timeout)'} }),
+      segundos * 1000);
+  });
+}
+
+function pintarVeredicto() {
+  const v = $('#veredicto');
+  const util = RESULTADOS.gum.ok && RESULTADOS.final.ok;
+  let html;
+
+  if (util) {
+    html = `<h2 class="ok">Este navegador SIRVE para la Opción A</h2>
+      <p>Transcripción real obtenida:</p>
+      <ul><li>«<strong>${escapar(RESULTADOS.final.texto)}</strong>»</li></ul>
+      <ul><li>Web Speech API funcional y micrófono accesible.</li></ul>`;
+  } else if (!RESULTADOS.gum.ok) {
+    const bloqueadoPorApp = /OpenCode|Electron/i.test(navigator.userAgent);
+    html = `<h2 class="bad">Este navegador NO sirve</h2><ul>`;
+    if (bloqueadoPorApp) {
+      html += `<li><strong>OpenCode deniega <code>media</code> por código</strong>
+        (allowlist <code>clipboard-sanitized-write, notifications</code>).
+        No es configurable: usa Safari o Chrome.</li>`;
+    } else {
+      html += `<li><strong>Micrófono denegado</strong>:
+        <code>${escapar(RESULTADOS.gum.detalle)}</code></li>`;
+      html += `<li>Activa el permiso en el candado de la barra de direcciones
+        y en <code>Ajustes del Sistema → Privacidad y seguridad → Micrófono</code>,
+        luego vuelve a ejecutar.</li>`;
+    }
+    html += `</ul>`;
+  } else {
+    html = `<h2 class="warn">Micrófono correcto, pero el motor de voz falla</h2><ul>
+      <li>Detalle: <code>${escapar(RESULTADOS.final.detalle || RESULTADOS.speech.detalle)}</code></li>
+      <li>Causa habitual: el navegador no puede contactar con el servicio de
+        reconocimiento de Google. En Brave, desactiva <em>Escudos</em> para
+        <code>127.0.0.1</code>; si persiste, usa Chrome.</li></ul>`;
+  }
+
+  v.innerHTML = html;
+  v.style.display = 'block';
+}
+
+async function enviarServidor() {
+  try {
+    await fetch('/api/diag', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        navegador: RESULTADOS.nav,
+        detalle: copia(),
+        micfono: RESULTADOS.gum,
+        motor_voz: RESULTADOS.speech,
+        transcripcion: RESULTADOS.final,
+        util: RESULTADOS.gum.ok && RESULTADOS.final.ok,
+      }),
+    });
+  } catch(e) { /* sin servidor: se ignora */ }
+}
+
+async function ejecutar() {
+  const btn = $('#btn');
+  btn.disabled = true;
+  $('#estado').textContent = 'Ejecutando…';
+
+  RESULTADOS.nav = agente();
+  fila('#t-nav', null, RESULTADOS.nav, copia());
+
+  RESULTADOS.secure = window.isSecureContext;
+  fila('#t-secure', RESULTADOS.secure,
+       RESULTADOS.secure ? 'Sí' : 'No',
+       RESULTADOS.secure ? location.origin : 'requiere https:// o localhost');
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  RESULTADOS.api = !!SR;
+  fila('#t-api', RESULTADOS.api, RESULTADOS.api ? 'Sí' : 'No',
+       RESULTADOS.api ? (window.webkitSpeechRecognition ? 'webkitSpeechRecognition' : 'SpeechRecognition') : '');
+
+  RESULTADOS.gum = await probarMic();
+  fila('#t-gum', RESULTADOS.gum.ok, RESULTADOS.gum.ok ? 'Permitido' : 'Denegado',
+       RESULTADOS.gum.detalle);
+
+  RESULTADOS.speech = await probarSpeech(3);
+  fila('#t-speech', RESULTADOS.speech.ok, RESULTADOS.speech.ok ? 'Arranca' : 'Falla',
+       RESULTADOS.speech.detalle);
+
+  RESULTADOS.final = RESULTADOS.gum.ok
+    ? await probarSpeech(10)
+    : {ok:false, detalle:'omitido: sin microfono'};
+  fila('#t-final', RESULTADOS.final.ok,
+       RESULTADOS.final.ok ? 'Transcripción obtenida' : 'Sin transcripción',
+       RESULTADOS.final.ok ? RESULTADOS.final.texto : RESULTADOS.final.detalle);
+
+  pintarVeredicto();
+  await enviarServidor();
+  $('#estado').textContent = 'Diagnóstico completado';
+  btn.disabled = false;
+}
+
+$('#btn').addEventListener('click', ejecutar);
+</script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+{
+  "resultados": [
+    {
+      "audio_id": "audio1_frase_corta",
+      "archivo": "audio1_frase_corta.wav",
+      "hipotesis": "[MOCK] Transcripcion simulada del servicio de prueba. Configure GEMINI_API_KEY para transcribir el audio real.",
+      "provider": "mock",
+      "evaluable": false,
+      "http_status": 200,
+      "servicio_ms": 1664,
+      "motivo": "Gemini no pudo transcribir y se activo el proveedor simulado. Motivo: Gemini rechazo la credencial (ClientError): 403 PERMISSION_DENIED. {'error': {'code': 403, 'message': 'Your project has been denied access. Please contact support.', 'status': 'PERMISSION_DENIED'}}. Revisa que GEMINI_API_KEY sea valida y que el modelo este habilitado en el proyecto de Google Cloud."
+    },
+    {
+      "audio_id": "audio2_numeros_hora",
+      "archivo": "audio2_numeros_hora.wav",
+      "hipotesis": "[MOCK] Transcripcion simulada del servicio de prueba. Configure GEMINI_API_KEY para transcribir el audio real.",
+      "provider": "mock",
+      "evaluable": false,
+      "http_status": 200,
+      "servicio_ms": 2327,
+      "motivo": "Gemini no pudo transcribir y se activo el proveedor simulado. Motivo: Gemini rechazo la credencial (ClientError): 403 PERMISSION_DENIED. {'error': {'code': 403, 'message': 'Your project has been denied access. Please contact support.', 'status': 'PERMISSION_DENIED'}}. Revisa que GEMINI_API_KEY sea valida y que el modelo este habilitado en el proyecto de Google Cloud."
+    },
+    {
+      "audio_id": "audio3_frase_larga",
+      "archivo": "audio3_frase_larga.wav",
+      "hipotesis": "[MOCK] Transcripcion simulada del servicio de prueba. Configure GEMINI_API_KEY para transcribir el audio real.",
+      "provider": "mock",
+      "evaluable": false,
+      "http_status": 200,
+      "servicio_ms": 2779,
+      "motivo": "Gemini no pudo transcribir y se activo el proveedor simulado. Motivo: Gemini rechazo la credencial (ClientError): 403 PERMISSION_DENIED. {'error': {'code': 403, 'message': 'Your project has been denied access. Please contact support.', 'status': 'PERMISSION_DENIED'}}. Revisa que GEMINI_API_KEY sea valida y que el modelo este habilitado en el proyecto de Google Cloud."
+    }
+  ]
+}

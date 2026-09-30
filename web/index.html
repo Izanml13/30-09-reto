@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Servicio de transcripción de voz ASIX: Web Speech API en tiempo real y endpoint Flask hacia Gemini.">
+<title>Speech-to-Text · ASIX</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2322d3ee'/%3E%3Cpath d='M16 8a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0v-5a3 3 0 0 1 3-3z' fill='%230f1420'/%3E%3Cpath d='M10 15v1a6 6 0 0 0 12 0v-1M16 22v3' stroke='%230f1420' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+</head>
+<body>
+
+<!-- ===================== BARRA SUPERIOR ===================== -->
+<header class="topbar">
+  <div class="topbar__inner">
+
+    <a class="brand" href="/">
+      <span class="brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z"/>
+          <path d="M7 11v1a5 5 0 0 0 10 0v-1M12 17v4M9 21h6"/>
+        </svg>
+      </span>
+      <span class="brand__name">Speech&#8209;to&#8209;Text</span>
+      <span class="brand__badge">ASIX</span>
+    </a>
+
+    <nav class="nav" aria-label="Principal">
+      <a href="/" aria-current="page">Transcripción</a>
+      <a href="/diagnostico.html">Diagnóstico</a>
+      <a href="/captura_webspeech.html">Captura por lote</a>
+      <a href="/api/health" target="_blank" rel="noopener">API</a>
+    </nav>
+
+    <div class="topbar__status">
+      <span id="estado-servidor" class="pill pill--wait">
+        <span class="pill__dot" aria-hidden="true"></span>Consultando…
+      </span>
+    </div>
+
+  </div>
+</header>
+
+<!-- ===================== CABECERA DE PÁGINA ===================== -->
+<div class="pagehead">
+  <div class="pagehead__inner">
+    <div class="pagehead__text">
+      <p class="eyebrow">Reto del día · Speech-to-Text</p>
+      <h1>Transcripción de voz en español</h1>
+      <p class="lede">
+        Dos métodos comparables sobre los mismos audios de prueba: la
+        <strong>Web Speech API</strong> del navegador (tiempo real, sin clave)
+        y un <strong>endpoint Flask</strong> que envía audio a
+        <strong>Gemini</strong> (por lotes).
+      </p>
+    </div>
+    <dl class="kpis">
+      <div class="kpi">
+        <dt>Métodos</dt>
+        <dd>2</dd>
+      </div>
+      <div class="kpi">
+        <dt>Audios de prueba</dt>
+        <dd>3</dd>
+      </div>
+      <div class="kpi">
+        <dt>Idioma</dt>
+        <dd>es&#8209;ES</dd>
+      </div>
+    </dl>
+  </div>
+</div>
+
+<main class="layout">
+
+  <!-- ============ PANEL A · WEB SPEECH API ============ -->
+  <section class="panel" id="panel-a">
+    <div class="panel__head">
+      <div class="panel__title">
+        <span class="tag tag--a" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z"/><path d="M7 11v1a5 5 0 0 0 10 0v-1M12 17v4"/>
+          </svg>
+        </span>
+        <span class="panel__names">
+          <h2>Opción A — Web Speech API</h2>
+          <p>Tiempo real · navegador · sin API key</p>
+        </span>
+      </div>
+      <span id="soporte-speech" class="pill pill--wait">comprobando…</span>
+    </div>
+
+    <div class="controls">
+      <label class="ctrl">
+        <span class="ctrl__label">Idioma</span>
+        <select id="idioma">
+          <option value="es-ES" selected>Español (España) — es-ES</option>
+          <option value="es-MX">Español (México) — es-MX</option>
+          <option value="en-US">Inglés (EE. UU.) — en-US</option>
+        </select>
+      </label>
+
+      <label class="switch">
+        <input type="checkbox" id="continuo" checked>
+        <span class="switch__ui" aria-hidden="true"></span>
+        <span class="switch__text">Escucha continua</span>
+      </label>
+
+      <label class="switch">
+        <input type="checkbox" id="interino" checked>
+        <span class="switch__ui" aria-hidden="true"></span>
+        <span class="switch__text">Texto provisional</span>
+      </label>
+    </div>
+
+    <div class="actions">
+      <button id="btn-empezar" class="btn btn--primary">
+        <span class="btn__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+        </span>
+        Empezar a escuchar
+      </button>
+      <button id="btn-parar" class="btn btn--danger" disabled>
+        <span class="btn__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+        </span>
+        Detener
+      </button>
+      <button id="btn-limpiar-a" class="btn btn--ghost">Limpiar</button>
+    </div>
+
+    <output id="texto-a" class="caja caja--viva" aria-live="polite">
+      <span class="placeholder">Pulsa «Empezar a escuchar» y habla. El texto aparecerá aquí palabra a palabra.</span>
+    </output>
+
+    <div class="pie">
+      <span id="info-a">—</span>
+      <button id="btn-copiar-a" class="btn btn--mini">Copiar transcripción</button>
+    </div>
+  </section>
+
+  <!-- ============ PANEL B · ENDPOINT FLASK → GEMINI ============ -->
+  <section class="panel" id="panel-b">
+    <div class="panel__head">
+      <div class="panel__title">
+        <span class="tag tag--b" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/>
+            <path d="M7 7.5h.01M7 16.5h.01"/>
+          </svg>
+        </span>
+        <span class="panel__names">
+          <h2>Opción B — Endpoint Flask → Gemini</h2>
+          <p>Por lotes · requiere API key · formato ASIX</p>
+        </span>
+      </div>
+      <span id="estado-gemini" class="pill pill--wait">—</span>
+    </div>
+
+    <form id="form-b" class="form">
+      <label class="file">
+        <input type="file" id="audio" accept=".wav,.mp3,.m4a,.ogg,.webm,.flac">
+        <span class="file__frame" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 16V4M12 4L7 9M12 4l5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+          </svg>
+        </span>
+        <span class="file__text">
+          <strong>Elegir fichero de audio</strong>
+          <small>wav · mp3 · m4a · ogg · webm · flac</small>
+        </span>
+      </label>
+
+      <div class="controls controls--compact">
+        <label class="ctrl">
+          <span class="ctrl__label">Idioma</span>
+          <select id="idioma-b">
+            <option value="es-ES" selected>es-ES</option>
+            <option value="es-MX">es-MX</option>
+            <option value="en-US">en-US</option>
+          </select>
+        </label>
+        <label class="ctrl">
+          <span class="ctrl__label">Proveedor</span>
+          <select id="proveedor-b">
+            <option value="gemini" selected>gemini (por defecto)</option>
+            <option value="mock">mock (simulado)</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="actions">
+        <button type="submit" id="btn-enviar" class="btn btn--secondary">
+          <span class="btn__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M12 5l-6 6M12 5l6 6"/></svg>
+          </span>
+          Transcribir en el servidor
+        </button>
+        <button type="button" id="btn-ejemplos" class="btn btn--ghost">Audios de prueba</button>
+      </div>
+    </form>
+
+    <output id="salida-b" class="caja caja--json">
+      <span class="placeholder">La respuesta JSON del endpoint aparecerá aquí.</span>
+    </output>
+  </section>
+
+  <!-- ============ PANEL C · COMPARATIVA ============ -->
+  <section class="panel panel--wide" id="panel-c">
+    <div class="panel__head">
+      <div class="panel__title">
+        <span class="tag tag--c" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>
+          </svg>
+        </span>
+        <span class="panel__names">
+          <h2>Comparativa de precisión</h2>
+          <p>WER sobre la verdad terreno de los 3 audios</p>
+        </span>
+      </div>
+      <span id="estado-eval" class="pill pill--wait">—</span>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table" id="tabla-eval">
+        <thead>
+          <tr>
+            <th scope="col">Audio</th>
+            <th scope="col">Referencia</th>
+            <th scope="col">Web&nbsp;Speech&nbsp;API</th>
+            <th scope="col">Endpoint</th>
+            <th scope="col" class="num">WER&nbsp;A</th>
+            <th scope="col" class="num">WER&nbsp;B</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="empty"><td colspan="6">Todavía no hay resultados.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="legend">
+      <p>
+        <strong>WER</strong> (Word Error Rate) =
+        <code>(sustituciones + borrados + insertados) / palabras de referencia</code>.
+        Cuanto más bajo, mejor. El texto se normaliza (minúsculas, sin acentos
+        ni puntuación) antes de comparar.
+      </p>
+      <p class="legend__note">
+        Las filas del proveedor <em>mock</em> se marcan <strong>no evaluables</strong>:
+        el simulador no analiza el audio y medirlo sería un dato falso.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===================== PIE ===================== -->
+<footer class="footer">
+  <div class="footer__inner">
+    <p>ASIX · Reto del día — Speech-to-Text</p>
+    <p id="pie-tec" class="footer__tech"></p>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
